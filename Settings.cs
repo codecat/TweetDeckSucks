@@ -1,116 +1,114 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Globalization;
 using System.IO;
-using System.Collections;
+using System.Linq;
 
 namespace TweetdeckSucks
 {
   public class Settings
   {
-    private Dictionary<string, string> Keys = new Dictionary<string, string>();
-    private string Filename;
+    private readonly string filename;
 
-    public Settings(String Filename)
+    private Dictionary<string, string> keys;
+
+    public Settings(String filename)
     {
-      this.Filename = Filename;
+      this.filename = filename;
 
-      loadFile();
+      this.Load();
     }
 
-    private void loadFile()
+    private void Load()
     {
-      if (File.Exists(Filename)) {
-        string[] lines = File.ReadAllLines(Filename);
-        string[] parse;
-        Keys.Clear();
-        foreach (string line in lines) {
-          parse = line.Split(new char[] { '=' }, 2);
-          if (parse.Length == 2)
-            Keys.Add(parse[0], parse[1]);
-        }
+      if (File.Exists(this.filename)) {
+        this.keys = File.ReadLines(this.filename)
+                        .Select(s => s.Split(new[] {'='}, 2))
+                        .Where(strings => strings.Length == 2)
+                        .ToDictionary(strings => strings[0], strings => strings[1]);
       }
+    }
+
+    public void Save()
+    {
+      File.WriteAllLines(this.filename, this.keys.Select(pair => string.Format("{0}={1}", pair.Key, pair.Value)));
+    }
+
+    public void Cancel()
+    {
+      this.Load();
     }
 
     public string GetFilename()
     {
-      return Filename;
+      return this.filename;
     }
 
     public string GetString(string key)
     {
-      if (Keys.ContainsKey(key))
-        return Keys[key];
-      return "";
+      return this.keys.ContainsKey(key) ? this.keys[key] : "";
     }
+
     public bool GetBool(string key)
     {
       try {
-        if (Keys.ContainsKey(key))
-          return bool.Parse(Keys[key]);
-      } catch { }
+        if (this.keys.ContainsKey(key)) {
+          return bool.Parse(this.keys[key]);
+        }
+      } catch {}
       return false;
     }
+
     public int GetInt(string key)
     {
       try {
-        if (Keys.ContainsKey(key))
-          return int.Parse(Keys[key]);
-      } catch { }
+        if (this.keys.ContainsKey(key)) {
+          return int.Parse(this.keys[key]);
+        }
+      } catch {}
       return 0;
     }
+
     public float GetFloat(string key)
     {
       try {
-        if (Keys.ContainsKey(key))
-          return float.Parse(Keys[key]);
-      } catch { }
+        if (this.keys.ContainsKey(key)) {
+          return float.Parse(this.keys[key], CultureInfo.InvariantCulture.NumberFormat);
+        }
+      } catch {}
       return 0f;
     }
 
     public bool Contains(string key)
     {
-      return Keys.ContainsKey(key);
+      return this.keys.ContainsKey(key);
     }
 
     public void SetString(string key, string value)
     {
-      Keys[key] = value;
+      this.keys[key] = value;
     }
+
     public void SetBool(string key, bool value)
     {
-      Keys[key] = value.ToString();
+      this.keys[key] = value.ToString();
     }
+
     public void SetInt(string key, int value)
     {
-      Keys[key] = value.ToString();
+      this.keys[key] = value.ToString(CultureInfo.InvariantCulture);
     }
+
     public void SetFloat(string key, float value)
     {
-      Keys[key] = value.ToString();
+      this.keys[key] = value.ToString(CultureInfo.InvariantCulture);
     }
 
     public void Delete(string key)
     {
-      if (Keys.ContainsKey(key))
-        Keys.Remove(key);
-    }
-
-    public void Save()
-    {
-      string[] output = new string[Keys.Count];
-      int c = 0;
-      foreach (KeyValuePair<string, string> entry in Keys) {
-        output[c] = entry.Key + "=" + entry.Value;
-        c++;
+      if (this.keys.ContainsKey(key)) {
+        this.keys.Remove(key);
       }
-      File.WriteAllLines(Filename, output);
-    }
-
-    public void Cancel()
-    {
-      loadFile();
     }
   }
 }
